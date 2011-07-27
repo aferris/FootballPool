@@ -1,24 +1,26 @@
 require "digest/sha1"
 
 class User < ActiveRecord::Base
-  has_one :weekly_user_point
-  has_one :tiebreaker
+  has_many :weekly_user_points
+  has_many :tiebreakers
+  has_many :picks
 
   attr_accessor :password
   attr_accessible :login, :password, :email_address, :first_name, :last_name
   
-  validates_uniqueness_of :login
-  validates_presence_of   :login, :password, :first_name
-  validates_format_of :email_address, :with => /^([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})$/i 
+  validates :login, :presence => true, :uniqueness => true
+  validates :password, :presence => true
+  validates :first_name, :presence => true
+  validates :email_address, :format => { :with => /^([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})$/i  }
   
   before_destroy :dont_destroy_aferris
   
   def before_create
-    self.hashed_password = User.hash_password(self.password)
+    self.hashed_password = hash_password(self.password)
   end
   
   def before_update
-    self.hashed_password = User.hash_password(self.password)
+    self.hashed_password = hash_password(self.password)
   end
 
   def after_create
@@ -31,13 +33,14 @@ class User < ActiveRecord::Base
   
   def self.login(login, password)
     hashed_password = hash_password(password || "")
-    find(:first, :conditions => ["login = ? and hashed_password = ?",
-                                  login, hashed_password])
+    where(:login => login, :hashed_password => hashed_password).first
   end
   
   def try_to_login
-    User.login(self.login, self.password)
+    login(self.login, self.password)
   end
+  
+  private
   
   def dont_destroy_aferris
     raise "Can't destroy aferris" if self.login == 'aferris'

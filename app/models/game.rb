@@ -1,9 +1,10 @@
 class Game < ActiveRecord::Base
-  validates_presence_of :week, :hometeam_id, :awayteam_id
-  validates_uniqueness_of :week, :scope => [:hometeam_id]
-  validates_uniqueness_of :week, :scope => [:awayteam_id]
-
   has_one :tiebreaker
+  has_many :picks
+
+  validates :week, :presence => true, :uniqueness => {:scope => [:hometeam_id, :awayteam_id]}
+  validates :hometeam_id, :presence => true
+  validates :awayteam_id, :presence => true
   
   def update_winner
     if self.home_score > self.away_score
@@ -18,10 +19,10 @@ class Game < ActiveRecord::Base
   end
 
   def self.find_winner(game_id)
-    game = Game.find(game_id)
+    game = where(game_id)
 
     if game.winner > 0
-      winner = Team.find(game.winner)
+      winner = Team.where(game.winner)
     end
       
     winner
@@ -29,7 +30,7 @@ class Game < ActiveRecord::Base
 
   def find_winner
     if self.winner > 0
-      winner = Team.find(self.winner)
+      winner = Team.where(self.winner)
     end
 
     winner
@@ -50,9 +51,9 @@ class Game < ActiveRecord::Base
   def find_loser
     if self.winner > 0
       if self.winner == self.hometeam_id
-        loser = Team.find(self.awayteam_id)
+        loser = Team.where(self.awayteam_id)
       elsif self.winner == self.awayteam_id
-        loser = Team.find(self.hometeam_id)
+        loser = Team.where(self.hometeam_id)
       end
     end
       
@@ -91,7 +92,7 @@ class Game < ActiveRecord::Base
   end
   
   def self.get_team_schedule(team)
-    team_games = where('hometeam_id = ? or awayteam_id = ?', team, team.order('week')
+    team_games = where('hometeam_id = ? or awayteam_id = ?', team, team).order('week')
     
     team_games
   end

@@ -19,7 +19,7 @@ class WeeklyUserPoint < ActiveRecord::Base
   end
   
   def self.find_weekly_winner(week)
-	@winner = []
+	winner = []
 
 	tiebreaker_game = where(:week => week).first.tiebreaker.game
 
@@ -31,52 +31,56 @@ class WeeklyUserPoint < ActiveRecord::Base
 		winner_list = order_weekly_winner_list(week, tiebreaker_points)
 		winner_list.each do | a |
 			if best_tie == -1
-				@winner << a
+				winner << a
 				best_tie = a.tiebreaker.points
 			elsif a.tiebreaker.points == best_tie
-				@winner << a
+				winner << a
 			else
 				break
 			end
 		end
 	end
 	
-	@winner
+	winner
   end
   
   def self.find_leaders(week, max_points)
+    final_leaders = []
+	
     if max_points > 0
-      final_leaders = Array.new
       
-      leaders = where("week = ? and points = ?", week, max_points)
-      next_leaders =  where("week = ? and points = ?", week, max_points - 1)
+      leaders = where(:week => week, :points => max_points)
+      next_leaders =  where(:week => week, :points => max_points - 1)
       
       # start with the leaders
       final_leaders = leaders
 
       if !next_leaders.empty?
-        tiebreaker_game = Tiebreaker.where(:week =>, week).first
+        tiebreaker_game = where(:week => week).first.tiebreaker.game
       
         # if the leaders are unanimous in their tiebreaker game pick, the runners up cannot win
         both_picked = 0
         tb_pick = 0
-        for leader in leaders
-          pick = Pick.where('week = ? and user_id = ? and game_id = ?', week, leader.user_id, tiebreaker_game.game_id).first
-          
-          if tb_pick == 0
-            tb_pick = pick.team_id
-          elsif tb_pick != pick.team_id
-            both_picked = 1
-          end
+        leaders.each do | leader |
+          pick = Pick.where(:week => week, :user_id => leader.user, :game_id => tiebreaker_game).first
+		  if !pick.nil?
+	          if tb_pick == 0
+	            tb_pick = pick.team
+	          elsif tb_pick != pick.team
+	            both_picked = 1
+	          end
+		  end
         end
         
         #if the leaders are unanimous, only the next leaders that picked opposite can win
         if both_picked == 0
           for next_leader in next_leaders
-            next_pick = Pick.where('week = ? and user_id = ? and game_id = ?', week, next_leader.user_id, tiebreaker_game.game_id).first
-            if next_pick.team_id != tb_pick
-              final_leaders << next_leader
-            end
+            next_pick = Pick.where(:week => week, :user_id => next_leader.user, :game_id => tiebreaker_game).first
+            if !next_pick.nil?
+				if next_pick.team != tb_pick
+	              final_leaders << next_leader
+	            end
+			end
           end
         end
       end
@@ -93,11 +97,10 @@ class WeeklyUserPoint < ActiveRecord::Base
 
     self.points = 0
 
-    picks = Pick.where("week = ? and user_id = ?", self.week, self.user_id)
+    picks = Pick.where(:week => self.week, :user_id => self.user)
 
-    for pick in picks
-      game = Game.find(pick.game_id)
-      if game.winner == pick.team_id
+    picks.each do | pick |
+      if pick.game.winner == pick.team
         self.points += 1
       end
     end
