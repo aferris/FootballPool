@@ -1,0 +1,1 @@
+rake send_winner_email

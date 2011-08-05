@@ -1,0 +1,1 @@
+rake update_nfl_standings
