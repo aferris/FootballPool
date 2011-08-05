@@ -1,26 +1,29 @@
-require File.dirname(__FILE__) + '/CSVParser'
+﻿# encoding: utf-8
+
 require 'bundler'
 require 'active_record'
 require 'yaml'
 
-Bundler.require(:default, :development)
+Bundler.require(:default)
 
-#dbconfig = YAML::load(File.open(File.dirname(__FILE__) + '/../config/database.yml'))
-ActiveRecord::Base.establish_connection(:adapter => :mysql2,
-  :database => "pool3",
-  :username => "root",
-  :password => "",
-  :host => "localhost",
-  :pool => 5,
-  :timeout => 5000,
-  )
+unless ARGV.length == 1
+	puts "Need an database configuration input file."
+	puts "Usage: ruby create_cutoff_times <YML input file>"
+	exit
+end
 
-ActiveRecord::Base.logger = Logger.new(STDERR)
+db_file = File.open(ARGV[0])
+db_config = YAML::load(db_file)
+
+ActiveRecord::Base.establish_connection(db_config)
+
+#ActiveRecord::Base.logger = Logger.new(STDERR)
 
 class Week < ActiveRecord::Base
 end
 
 class CutoffTime < ActiveRecord::Base
+	validates :week, :uniqueness => true
 end
 
 class Game < ActiveRecord::Base
@@ -32,11 +35,16 @@ end
 # make a cutoff time for each week
 weeks = Week.all
 
+count = 0
 weeks.each do |week|
 	# find the earliest game of the week
-	earliest = Game.earliest(week)
+	earliest = Game.earliest(week.id)
 	
 	# make the cutoff time for that week the time of the earliest game
-	cutoff = CutoffTime.new(:cutoff_time => earliest, :week => week)
-	cutoff.save
+	cutoff = CutoffTime.new(:cutoff_time => earliest, :week => week.id)
+	if cutoff.save
+		count += 1
+	end
 end
+
+puts count.to_s + " cutoff times saved."
