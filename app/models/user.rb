@@ -2,6 +2,7 @@ require "digest/sha1"
 
 class User < ActiveRecord::Base
   has_many :weekly_user_points
+  has_one :total_user_point
   has_many :tiebreakers
   has_many :picks
 
@@ -15,17 +16,9 @@ class User < ActiveRecord::Base
   
   before_destroy :dont_destroy_aferris
   
-  def before_create
-    self.hashed_password = hash_password(self.password)
-  end
-  
-  def before_update
-    self.hashed_password = hash_password(self.password)
-  end
-
-  def after_create
-    @password = nil
-  end
+  before_create { self.hashed_password = hash_password(self.password) } 
+  before_update { self.hashed_password = hash_password(self.password) }
+  after_create  { @password = nil }
   
   def self.hash_password(password)
     Digest::SHA1.hexdigest(password)
@@ -37,7 +30,7 @@ class User < ActiveRecord::Base
   end
   
   def try_to_login
-    login(self.login, self.password)
+    User.login(self.login, self.password)
   end
   
   private

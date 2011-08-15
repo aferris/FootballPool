@@ -13,35 +13,35 @@ class WeeklyUserPoint < ActiveRecord::Base
 			| a, b | 
 			a.tie_diff(tiebreaker_points) <=> b.tie_diff(tiebreaker_points)
 			}
-	end
-	
-	winners
+    end
+    
+    winners
   end
   
   def self.find_weekly_winner(week)
-	winner = []
+    winner = []
 
-	tiebreaker_game = where(:week => week).first.tiebreaker.game
+    tiebreaker_game = where(:week => week).first.tiebreaker.game
 
-	if Time.now > tiebreaker_game.game_time
-		tiebreaker_points = tiebreaker_game.home_score + tiebreaker_game.away_score
-		
-		best_tie = -1
-		
-		winner_list = order_weekly_winner_list(week, tiebreaker_points)
-		winner_list.each do | a |
-			if best_tie == -1
-				winner << a
-				best_tie = a.tiebreaker.points
-			elsif a.tiebreaker.points == best_tie
-				winner << a
-			else
-				break
-			end
-		end
-	end
-	
-	winner
+    if Time.now > tiebreaker_game.game_time
+      tiebreaker_points = tiebreaker_game.home_score + tiebreaker_game.away_score
+      
+      best_tie = -1
+      
+      winner_list = order_weekly_winner_list(week, tiebreaker_points)
+      winner_list.each do | a |
+        if best_tie == -1
+          winner << a
+          best_tie = a.tiebreaker.points
+        elsif a.tiebreaker.points == best_tie
+          winner << a
+        else
+          break
+        end
+      end
+    end
+    
+    winner
   end
   
   def self.find_leaders(week, max_points)
@@ -90,7 +90,7 @@ class WeeklyUserPoint < ActiveRecord::Base
   end
 
   def tie_diff(game_score)
-	(tiebreaker.points - game_score).abs
+    (tiebreaker.points - game_score).abs
   end
     
   def update_user_week(userPicks)

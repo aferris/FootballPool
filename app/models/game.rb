@@ -2,6 +2,8 @@ class Game < ActiveRecord::Base
   has_one :tiebreaker
   has_many :picks
 
+  scope :week_schedule, lambda {|week| where(:week => week).order(:game_time, :id)}
+  
   validates :week, :presence => true, :uniqueness => {:scope => [:hometeam_id, :awayteam_id]}
   validates :hometeam_id, :presence => true
   validates :awayteam_id, :presence => true
@@ -92,8 +94,6 @@ class Game < ActiveRecord::Base
   end
   
   def self.get_team_schedule(team)
-    team_games = where('hometeam_id = ? or awayteam_id = ?', team, team).order('week')
-    
-    team_games
+    where('hometeam_id = ? or awayteam_id = ?', team, team).order(:week)
   end
 end
